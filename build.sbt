@@ -6,12 +6,12 @@ ThisBuild / organizationName := "example"
 lazy val root = (project in file("."))
   .enablePlugins(Smithy4sCodegenPlugin)
   .settings(
-    name := "smithy4s-test",
-    libraryDependencies ++= Seq(
-      "com.disneystreaming.smithy4s" %% "smithy4s-http4s" % smithy4sVersion.value,
-      "com.disneystreaming.smithy4s" %% "smithy4s-http4s-swagger" % smithy4sVersion.value,
-      "org.http4s" %% "http4s-ember-server" % "0.23.18"
-    ),
+    name := "smithy4s-seed",
+    libraryDependencies ++= Dependency.Library.smithy4s ++
+      Dependency.Library.`smity4s-caliban` ++
+      Dependency.Library.caliban,
     Compile / run / fork := true,
     Compile / run / connectInput := true
+//    Compile / smithy4sInputDirs := Seq ((ThisBuild / baseDirectory).value / "smithy_input"),
+//    Compile / smithy4sOutputDir := (ThisBuild / baseDirectory).value / "smithy_output",
   )

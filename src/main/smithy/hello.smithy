@@ -2,30 +2,18 @@ $version: "2"
 
 namespace hello
 
-use alloy#simpleRestJson
-
-@simpleRestJson
-service HelloWorldService {
-  version: "1.0.0",
-  operations: [Hello]
+service HelloService {
+    operations: [GetHello]
 }
 
-@http(method: "GET", uri: "/hello/{name}", code: 200)
-operation Hello {
-  input: Person,
-  output: Greeting
-}
-
-structure Person {
-  @httpLabel
-  @required
-  name: String,
-
-  @httpQuery("town")
-  town: String
-}
-
-structure Greeting {
-  @required
-  message: String
+@readonly
+operation GetHello {
+    input := {
+        @required
+        name: String
+    }
+    output := {
+        @required
+        greeting: String
+    }
 }

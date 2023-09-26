@@ -1,37 +1,43 @@
 package com.example
 
-import hello._
-import cats.syntax.all._
+import caliban.{CalibanError, GraphQL, Http4sAdapter}
+import caliban.interop.cats.implicits._
+import caliban.interop.tapir.HttpInterpreter
 import cats.effect._
 import cats.effect.syntax.all._
-import org.http4s.implicits._
-import org.http4s.ember.server._
-import org.http4s._
+import cats.syntax.all._
 import com.comcast.ip4s._
-import smithy4s.http4s.SimpleRestJsonBuilder
+import sttp.tapir.json.circe._
+import hello._
+import org.http4s._
+import org.http4s.ember.server.EmberServerBuilder
+import org.http4s.implicits._
+import org.http4s.server.Router
+import org.polyvariant.smithy4scaliban._
+
 import scala.concurrent.duration._
 
-object HelloWorldImpl extends HelloWorldService[IO] {
-  def hello(name: String, town: Option[String]): IO[Greeting] = IO.pure {
-    town match {
-      case None    => Greeting(s"Hello " + name + "!")
-      case Some(t) => Greeting(s"Hello " + name + " from " + t + "!")
-    }
-  }
-}
-
-object Routes {
-  private val example: Resource[IO, HttpRoutes[IO]] =
-    SimpleRestJsonBuilder.routes(HelloWorldImpl).resource
-
-  private val docs: HttpRoutes[IO] =
-    smithy4s.http4s.swagger.docs[IO](HelloWorldService)
-
-  val all: Resource[IO, HttpRoutes[IO]] = example.map(_ <+> docs)
+object HelloWorldImpl extends HelloService[IO] {
+  def getHello(name: String): IO[GetHelloOutput] =
+    IO.println("hello, " + name).as(GetHelloOutput("hello, " + name))
 }
 
 object Main extends IOApp.Simple {
-  val run = Routes.all
+  implicit val rt: zio.Runtime[Any] = zio.Runtime.default
+
+  private val resourceRoutes: Resource[IO, HttpRoutes[IO]] =
+    CalibanGraphQLInterpreter.server(HelloWorldImpl).evalMap { serverApi =>
+      serverApi
+        .interpreterAsync[IO]
+        .map { interp =>
+          Router[IO](
+            "/api/graphql" ->
+              Http4sAdapter.makeHttpServiceF(HttpInterpreter(interp))
+          )
+        }
+    }
+
+  val run: IO[Unit] = resourceRoutes
     .flatMap { routes =>
       val thePort: Port = port"9000"
       val theHost: Hostname = host"localhost"
